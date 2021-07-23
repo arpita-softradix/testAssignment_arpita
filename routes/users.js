@@ -80,17 +80,15 @@ user.get('/', function (req, res) {
     //                             ORDER BY hobbie_id DESC SEPARATOR ', ') AS hobbies
     //             FROM user_hobbies
     //             GROUP BY user_id`;
-    // var sql2 = `SELECT user_id, hobbie_id FROM user_hobbies`;
-    // var sql3 = `SELECT * FROM users`;
-    // var sql4 = `SELECT users.*, user_hobbies.hobbie_id FROM users LEFT JOIN user_hobbies ON users.id = user_hobbies.user_id ORDER BY users.id`;
-    var sql5 = `SELECT users.*, h.hobbies FROM users
+    // var sql2 = `SELECT users.*, user_hobbies.hobbie_id FROM users LEFT JOIN user_hobbies ON users.id = user_hobbies.user_id ORDER BY users.id`;
+    var sql3 = `SELECT users.*, h.hobbies FROM users
                 LEFT JOIN (SELECT user_id,
                                     GROUP_CONCAT(DISTINCT hobbie_id
                                                 ORDER BY hobbie_id DESC SEPARATOR ', ') AS hobbies
                                 FROM user_hobbies
                                 GROUP BY user_id) as h
                 ON users.id = h.user_id`;
-    db.query(sql5, function (err, data) {
+    db.query(sql3, function (err, data) {
         if (err) {
             res.send({
                 "message": err.message,
@@ -99,30 +97,12 @@ user.get('/', function (req, res) {
                 "data": data
             })
         } else {
-            // db.query(sql2, (err, users_hobbie) => {
-            //     if (err) {
-            //         res.send({
-            //             "message": err.message,
-            //             "status": 0,
-            //             "code": res.statusCode,
-            //             "data": users_hobbie
-            //         })
-            //     } else {
-            //         for (let i = 0; i < data.length; i++) {
-            //             users_hobbie.forEach((user) => {
-            //                 if (data[i].id === user.user_id) {
-            //                     data.map(o => (o.hobbies = user.hobbie_id))
-            //                 }
-            //             });
-            //         }
             res.json({
                 "message": "list of users",
                 "status": 1,
                 "code": res.statusCode,
                 "data": data
             });
-            //     }
-            // })
         }
     })
 })
@@ -242,8 +222,10 @@ user.get('/:id', function (req, res) {
 // update user by id
 user.put('/:id', function (req, res) {
     const id = req.params.id;
-    var { firstname, lastname, email, password, gender, role_id } = req.body;
+    var { firstname, lastname, email, password, gender, role_id, hobbies } = req.body;
+    console.log("===hobbies===", hobbies);
     var sql2 = `UPDATE users SET firstname = ?, lastname = ?, email = ?, password = ?, gender = ?, role_id = ? WHERE id = ?`;
+    var sql3 = ``
     db.query(sql2, [firstname, lastname, email, password, gender, role_id, id], (err, data) => {
         if (err) {
             res.send({
