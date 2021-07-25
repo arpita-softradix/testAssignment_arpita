@@ -3,20 +3,15 @@ var user = express.Router();
 
 //  user registration
 user.post('/', function (req, res) {
-    const { firstname, lastname, email, password, gender, role } = req.body;
-    if (gender === 'Male') {
-        var gender_id = 1;
-    } else if (gender === 'Female') {
-        var gender_id = 2;
-    };
-    console.log("gender_id:", gender_id);
-    var hobbies = [];
-    hobbies = req.body.hobbie;
-    console.log(hobbies);
-
+    const { firstname, lastname, email, password, gender, rolls } = req.body;
+    var hobbies = req.body.hobbies;
     var sql1 = `SELECT * from users WHERE email = ?`;
-
     db.query(sql1, [email], function (err, result) {
+        // let headers = new Headers();
+        // headers.append('Access-Control-Allow-Origin', '*');
+        // headers.append('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        // headers.append('Access-Control-Allow-Headers','Content-Type, Authorization');
+        // res.setHeader(headers);
         if (err) {
             res.send({
                 "message": err.message,
@@ -26,11 +21,8 @@ user.post('/', function (req, res) {
             })
         } else {
             if (result.length === 0) {
-                if (role === 'Admin') { var role_id = 1 }
-                else if (role === 'Student') { var role_id = 2 }
-                else if (role === 'User') { var role_id = 3 }
                 var sql2 = `INSERT INTO users (firstname, lastname, email, password, gender, role_id) VALUES (?,?,?,?,?,?)`;
-                db.query(sql2, [firstname, lastname, email, password, gender_id, role_id], function (err, data) {
+                db.query(sql2, [firstname, lastname, email, password, gender, rolls], function (err, data) {
                     if (err) {
                         res.send({
                             "message": err.message,
@@ -41,22 +33,20 @@ user.post('/', function (req, res) {
                     };
 
                     for (let i = 0; i < hobbies.length; i++) {
-                        var hobbies_name = hobbies[i];
+                        var hobbie_id = hobbies[i];
                         var sql3 = `INSERT INTO user_hobbies (user_id, hobbie_id) SELECT users.id, hobbies.id FROM users, hobbies 
-                                    WHERE users.email=? AND hobbies.name = ?`;
-                        db.query(sql3, [email, hobbies_name], function (err, data) {
+                                    WHERE users.email= ? AND hobbies.id = ?`;
+                        db.query(sql3, [email, hobbie_id], function (err, data) {
                             if (err) { res.send({ "message": err.message }) };
-
-                            res.send({
-                                "hobbies_id": hobbies,
-                                "message": "register successfully",
-                                "status": 1,
-                                "code": res.statusCode,
-                                "data": req.body
-                            });
                         })
-
                     }
+                    console.log("user register successfully");
+                    res.send({
+                        "message": "register successfully",
+                        "status": 1,
+                        "code": res.statusCode,
+                        "data": req.body
+                    });
                 })
             }
             else {
