@@ -3,7 +3,7 @@ var user = express.Router();
 
 //  user registration
 user.post('/', function (req, res) {
-    const { firstname, lastname, email, password, gender, role_id, hobbies} = req.body;
+    const { firstname, lastname, email, password, gender, role_id, hobbies } = req.body;
     const is_user_exist_query = `SELECT * from users WHERE email = ?`;
     db.query(is_user_exist_query, [req.body.email], function (err, result) {
         if (err) {
@@ -15,44 +15,50 @@ user.post('/', function (req, res) {
             })
         } else {
             //Check user already exist 
-            if(result.length){
-                return res.send({
+            if (result.length) {
+                return res.status(400).send({
                     message: "user already exists",
                     status: 1,
-                    code: res.statusCode,
+                    // code: res.statusCode,
                     data: result
-                });
+                })
+                // return res.send({
+                //     message: "user already exists",
+                //     status: 1,
+                //     code: res.statusCode,
+                //     data: result
+                // });
             }
-                const insert_user_query = `INSERT INTO users (firstname, lastname, email, password, gender, role_id) VALUES (?,?,?,?,?,?)`;
-                db.query(insert_user_query, [firstname, lastname, email, password, gender, role_id], function (err, data) {
+            const insert_user_query = `INSERT INTO users (firstname, lastname, email, password, gender, role_id) VALUES (?,?,?,?,?,?)`;
+            db.query(insert_user_query, [firstname, lastname, email, password, gender, role_id], function (err, data) {
+                if (err) {
+                    res.send({
+                        message: err.message,
+                        status: 0,
+                        code: res.statusCode,
+                        data: req.body
+                    })
+                };
+                const user_id = data.insertId;
+                const insert_user_hobbies_query = `INSERT INTO user_hobbies (user_id, hobbie_id) VALUES ?`;
+                const value = [];
+                hobbies.forEach(hobbie => {
+                    value.push([user_id, hobbie]);
+                });
+                db.query(insert_user_hobbies_query, [value], function (err, data) {
                     if (err) {
+                        res.send({ message: err.message })
+                    } else {
+                        console.log("user register successfully");
                         res.send({
-                            message: err.message,
-                            status: 0,
+                            message: "register successfully",
+                            status: 1,
                             code: res.statusCode,
                             data: req.body
-                        })
-                    };
-                    let user_id = data.insertId;
-                    let insert_user_hobbies_query = `INSERT INTO user_hobbies (user_id, hobbie_id) VALUES ?`;
-                    let value = [];
-                    hobbies.forEach(user => {
-                        value.push([user_id, user]);
-                    });
-                    db.query(insert_user_hobbies_query, [value], function (err, data) {
-                        if (err) {
-                            res.send({ message: err.message })
-                        } else {
-                            console.log("user register successfully");
-                            res.send({
-                                message: "register successfully",
-                                status: 1,
-                                code: res.statusCode,
-                                data: req.body
-                            });
-                        }
-                    })
+                        });
+                    }
                 })
+            })
         }
     })
 })
@@ -207,25 +213,42 @@ user.get('/:id', function (req, res) {
 // update user by id
 user.put('/:id', function (req, res) {
     const id = req.params.id;
-    var { firstname, lastname, email, password, gender, role_id, hobbies } = req.body;
-    console.log("===hobbies===", hobbies);
-    var sql2 = `UPDATE users SET firstname = ?, lastname = ?, email = ?, password = ?, gender = ?, role_id = ? WHERE id = ?`;
-    var sql3 = ``
-    db.query(sql2, [firstname, lastname, email, password, gender, role_id, id], (err, data) => {
+    const { firstname, lastname, email, password, gender, role_id, hobbies } = req.body;
+    const value = [];
+    hobbies.forEach(hobbie => {
+        value.push([id, hobbie]);
+    });
+    const update_user_details_query = `UPDATE users SET firstname = ?, lastname = ?, email = ?, password = ?, gender = ?, role_id = ? WHERE id = ?`;
+    const delete_user_hobbies_query = `DELETE FROM user_hobbies WHERE user_id = ?`;
+    const update_user_hobbies_query = `INSERT INTO user_hobbies (user_id, hobbie_id) VALUES ?`;
+
+    db.query(delete_user_hobbies_query, [id], function (err, data) {
         if (err) {
-            res.send({
-                "message": err.message,
-                "status": 0,
-                "code": res.statusCode,
-                "data": req.body
-            })
+            res.send({ message: err.message })
         } else {
-            res.json({
-                "message": "user details updated",
-                "status": 1,
-                "code": res.statusCode,
-                "data": req.body
-            });
+            db.query(update_user_hobbies_query, [value], function (err, data) {
+                if (err) {
+                    res.send({ message: err.message })
+                } else {
+                    db.query(update_user_details_query, [firstname, lastname, email, password, gender, role_id, id], (err, data) => {
+                        if (err) {
+                            res.send({
+                                "message": err.message,
+                                "status": 0,
+                                "code": res.statusCode,
+                                "data": req.body
+                            })
+                        } else {
+                            res.json({
+                                "message": "user details updated",
+                                "status": 1,
+                                "code": res.statusCode,
+                                "data": req.body
+                            });
+                        }
+                    })
+                }
+            })
         }
     })
 })
@@ -233,22 +256,24 @@ user.put('/:id', function (req, res) {
 // delete user by id
 user.delete('/:id', function (req, res) {
     const id = req.params.id;
-    const sql1 = `DELETE `
-    const sql3 = `DELETE FROM users WHERE id = ?`;
-    db.query(sql3, [id], (err, data) => {
+    const delete_user_hobbies_query = `DELETE FROM user_hobbies WHERE user_id = ?`;
+    const delete_user_details_query = `DELETE FROM users WHERE id = ?`;
+
+    db.query(delete_user_hobbies_query, [id], (err, data) => {
         if (err) {
-            res.send({
-                "message": err.message,
-                "status": 0,
-                "code": res.statusCode,
-                "data": data
-            })
+            res.send({ message: err.message })
         } else {
-            res.json({
-                "message": "user delete successfully",
-                "status": 1,
-                "code": res.statusCode
-            });
+            db.query(delete_user_details_query, [id], (err, data) => {
+                if (err) {
+                    res.send({ message: err.message })
+                } else {
+                    res.json({
+                        "message": "user delete successfully",
+                        "status": 1,
+                        "code": res.statusCode
+                    });
+                }
+            })
         }
     })
 })

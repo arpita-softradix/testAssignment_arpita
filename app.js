@@ -20,6 +20,20 @@ app.use(cors({
   origin: '*'
 }));
 
+
+// let name="komal";
+// function showValue(){
+//   name = 10;
+// }
+// showValue();
+// console.log("x : ",name);
+
+// function showValue(){
+//   let y = 15;
+// }
+// console.log("y : ",y);
+
+
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
