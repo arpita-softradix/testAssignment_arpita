@@ -3,7 +3,7 @@ var user = express.Router();
 
 //  user registration
 user.post('/', function (req, res) {
-    const { firstname, lastname, email, password, gender, role_id, hobbies } = req.body;
+    const { firstname, lastname, email, password, gender, rolls, hobbies } = req.body;
     const is_user_exist_query = `SELECT * from users WHERE email = ?`;
     db.query(is_user_exist_query, [req.body.email], function (err, result) {
         if (err) {
@@ -16,7 +16,7 @@ user.post('/', function (req, res) {
         } else {
             //Check user already exist 
             if (result.length) {
-                return res.status(400).send({
+                return res.status(400).json({
                     message: "user already exists",
                     status: 1,
                     // code: res.statusCode,
@@ -30,7 +30,7 @@ user.post('/', function (req, res) {
                 // });
             }
             const insert_user_query = `INSERT INTO users (firstname, lastname, email, password, gender, role_id) VALUES (?,?,?,?,?,?)`;
-            db.query(insert_user_query, [firstname, lastname, email, password, gender, role_id], function (err, data) {
+            db.query(insert_user_query, [firstname, lastname, email, password, gender, rolls], function (err, userdata) {
                 if (err) {
                     res.send({
                         message: err.message,
@@ -39,7 +39,8 @@ user.post('/', function (req, res) {
                         data: req.body
                     })
                 };
-                const user_id = data.insertId;
+                const user_id = userdata.insertId;
+                console.log("user_id",user_id);
                 const insert_user_hobbies_query = `INSERT INTO user_hobbies (user_id, hobbie_id) VALUES ?`;
                 const value = [];
                 hobbies.forEach(hobbie => {
@@ -50,11 +51,12 @@ user.post('/', function (req, res) {
                         res.send({ message: err.message })
                     } else {
                         console.log("user register successfully");
-                        res.send({
+                        res.json({
                             message: "register successfully",
                             status: 1,
                             code: res.statusCode,
-                            data: req.body
+                            data: { id : user_id,
+                                    user : req.body}
                         });
                     }
                 })
@@ -213,7 +215,7 @@ user.get('/:id', function (req, res) {
 // update user by id
 user.put('/:id', function (req, res) {
     const id = req.params.id;
-    const { firstname, lastname, email, password, gender, role_id, hobbies } = req.body;
+    const { firstname, lastname, email, password, gender, rolls, hobbies } = req.body;
     const value = [];
     hobbies.forEach(hobbie => {
         value.push([id, hobbie]);
@@ -230,7 +232,7 @@ user.put('/:id', function (req, res) {
                 if (err) {
                     res.send({ message: err.message })
                 } else {
-                    db.query(update_user_details_query, [firstname, lastname, email, password, gender, role_id, id], (err, data) => {
+                    db.query(update_user_details_query, [firstname, lastname, email, password, gender, rolls, id], (err, data) => {
                         if (err) {
                             res.send({
                                 "message": err.message,
